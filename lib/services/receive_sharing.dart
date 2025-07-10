@@ -1,6 +1,5 @@
 import 'package:image_picker/image_picker.dart';
-import 'package:receive_sharing_intent/receive_sharing_intent.dart';
-
+import 'package:listen_sharing_intent/listen_sharing_intent.dart';
 
 class SharedIntent {
   static List<XFile>? sharedFiles;
