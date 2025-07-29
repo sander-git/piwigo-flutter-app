@@ -51,7 +51,7 @@ dependencies:
   device_info_plus: ^11.5.0 # Get device info (version
   flutter_local_notifications: ^19.1.0 # Throws notifications on download or upload
   open_filex: ^4.4.0 # Open files with devices apps
-  workmanager: ^0.6.0 # Background processes (auto upload)
+  workmanager: ^0.8.0 # Background processes (auto upload)
   gal: ^2.3.1 # Download images
 
   # Utils
