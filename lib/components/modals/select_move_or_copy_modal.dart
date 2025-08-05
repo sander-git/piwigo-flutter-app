@@ -209,7 +209,7 @@ class _ExpansionAlbumTileState extends State<ExpansionAlbumTile> {
                   child: Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
-                      "${List.generate(widget.index, (index) => '.').join()}${widget.index > 0 ? ' ' : ''}${widget.album.name}",
+                      "${List.generate(widget.index, (index) => '   ').join()} > ${widget.index > 0 ? ' ' : ''}${widget.album.name}",
                       overflow: TextOverflow.ellipsis,
                       style: _disabled ? Theme.of(context).textTheme.bodySmall : Theme.of(context).textTheme.bodyMedium,
                     ),
