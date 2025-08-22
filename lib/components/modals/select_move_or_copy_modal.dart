@@ -5,8 +5,8 @@ import 'package:piwigo_ng/network/albums.dart';
 import 'package:piwigo_ng/network/api_error.dart';
 import 'package:piwigo_ng/utils/localizations.dart';
 
-class MoveOrCopyModal extends StatefulWidget {
-  const MoveOrCopyModal({
+class SelectMoveOrCopyModal extends StatefulWidget {
+  const SelectMoveOrCopyModal({
     Key? key,
     this.album,
     this.isImage = false,
@@ -22,10 +22,10 @@ class MoveOrCopyModal extends StatefulWidget {
   final Future<dynamic> Function(AlbumModel)? onSelected;
 
   @override
-  _MoveOrCopyModalState createState() => _MoveOrCopyModalState();
+  _SelectMoveOrCopyModalState createState() => _SelectMoveOrCopyModalState();
 }
 
-class _MoveOrCopyModalState extends State<MoveOrCopyModal> {
+class _SelectMoveOrCopyModalState extends State<SelectMoveOrCopyModal> {
   late final Future<ApiResponse<List<AlbumModel>>> _albumFuture;
   late final List<int> _disabledAlbums;
 
@@ -209,7 +209,7 @@ class _ExpansionAlbumTileState extends State<ExpansionAlbumTile> {
                   child: Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
-                      "${List.generate(widget.index, (index) => '.').join()}${widget.index > 0 ? ' ' : ''}${widget.album.name}",
+                      "${List.generate(widget.index, (index) => '   ').join()} > ${widget.index > 0 ? ' ' : ''}${widget.album.name}",
                       overflow: TextOverflow.ellipsis,
                       style: _disabled ? Theme.of(context).textTheme.bodySmall : Theme.of(context).textTheme.bodyMedium,
                     ),
