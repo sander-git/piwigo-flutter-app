@@ -206,9 +206,9 @@ class _ExpansionAlbumTileState extends State<ExpansionAlbumTile> {
               children: [
                 Padding(padding: EdgeInsetsGeometry.only(left: 10.0)),
                 if (widget.index > 1) ...[
-                  Padding(padding: EdgeInsetsGeometry.only(
-                      left: 30.0*(widget.index-1)
-                  ))
+                  Padding(
+                      padding: EdgeInsetsGeometry.only(
+                          left: 30.0 * (widget.index - 1)))
                 ],
                 if (widget.album.children.isNotEmpty && !widget.isParent) ...[
                   GestureDetector(
@@ -239,7 +239,7 @@ class _ExpansionAlbumTileState extends State<ExpansionAlbumTile> {
                         padding: EdgeInsetsGeometry.symmetric(
                           horizontal: 8,
                         ),
-                        child: Row(children: [
+                        child: Row(spacing: 4, children: [
                           Text(
                             '${widget.album.nbCategories}',
                             style: TextStyle(
