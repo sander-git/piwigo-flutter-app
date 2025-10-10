@@ -38,7 +38,8 @@ class _SelectMoveOrCopyModalState extends State<SelectMoveOrCopyModal> {
     _disabledAlbums = [
       if (widget.album != null) widget.album!.id,
       if (parentAlbums.length == 1 || widget.isImage) 0,
-      if (!widget.isImage && parentAlbums.length > 1) int.parse(parentAlbums[parentAlbums.length - 2]),
+      if (!widget.isImage && parentAlbums.length > 1)
+        int.parse(parentAlbums[parentAlbums.length - 2]),
     ];
 
     super.initState();
@@ -203,48 +204,72 @@ class _ExpansionAlbumTileState extends State<ExpansionAlbumTile> {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              if (widget.album.children.isNotEmpty && !widget.isParent)
+                GestureDetector( // Add chevron
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => setState(() {
+                    _expanded = !_expanded;
+                  }),
+                  child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: AnimatedRotation(
+                        duration: const Duration(milliseconds: 200),
+                        turns: _expanded ? 0.25 : 0, //Rotate by 90°
+                        child: Icon(Icons.chevron_right),
+                      )),
+                ),
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
                   child: Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
-                      "${widget.index} ${widget.album.name}",
+                      "${widget.album.name}",
                       overflow: TextOverflow.ellipsis,
-                      style: _disabled ? Theme.of(context).textTheme.bodySmall : Theme.of(context).textTheme.bodyMedium,
+                      style: _disabled
+                          ? Theme.of(context).textTheme.bodySmall
+                          : Theme.of(context).textTheme.bodyMedium,
                     ),
                   ),
                 ),
               ),
               if (widget.album.children.isNotEmpty && !widget.isParent)
-                GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: () => setState(() {
-                    _expanded = !_expanded;
-                  }),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Center(
-                          child: Text(
-                            appStrings.albumCount(widget.album.nbCategories),
-                            style: TextStyle(
-                              color: Theme.of(context).primaryColor.withValues(alpha: 0.7),
-                              fontSize: 14,
+                Padding( //Folder box
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Center(
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                              color: Color.fromARGB(255, 196, 196, 196),
+                              borderRadius: BorderRadius.circular(5)),
+                          child: Padding(
+                            padding:
+                                EdgeInsetsGeometry.symmetric(horizontal: 8),
+                            child: Row(
+                              spacing: 2.0,
+                              children: [
+                                Text(
+                                  '${widget.album.nbCategories}',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                Icon(
+                                  Icons.folder,
+                                  size: 15,
+                                  color: Colors.white,
+                                ),
+                              ],
                             ),
                           ),
                         ),
-                        AnimatedRotation(
-                          duration: const Duration(milliseconds: 200),
-                          turns: _expanded ? -0.25 : 0.25,
-                          child: Icon(Icons.chevron_right),
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                ),
+                )
             ],
           ),
         ),
