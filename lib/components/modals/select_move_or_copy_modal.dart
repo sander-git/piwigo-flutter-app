@@ -4,6 +4,7 @@ import 'package:piwigo_ng/models/album_model.dart';
 import 'package:piwigo_ng/network/albums.dart';
 import 'package:piwigo_ng/network/api_error.dart';
 import 'package:piwigo_ng/utils/localizations.dart';
+import 'package:piwigo_ng/utils/resources.dart';
 
 class SelectMoveOrCopyModal extends StatefulWidget {
   const SelectMoveOrCopyModal({
@@ -233,7 +234,7 @@ class _ExpansionAlbumTileState extends State<ExpansionAlbumTile> {
                 if (widget.album.children.isNotEmpty && !widget.isParent) ...[
                   DecoratedBox(
                       decoration: BoxDecoration(
-                          color: Color.fromARGB(255, 196, 196, 196),
+                          color: Theme.of(context).colorScheme.surface,
                           borderRadius: BorderRadius.circular(5)),
                       child: Padding(
                         padding: EdgeInsetsGeometry.symmetric(
@@ -243,14 +244,14 @@ class _ExpansionAlbumTileState extends State<ExpansionAlbumTile> {
                           Text(
                             '${widget.album.nbCategories}',
                             style: TextStyle(
-                              color: Colors.white,
+                              color: Theme.of(context).colorScheme.inverseSurface,
                               fontSize: 14,
                             ),
                           ),
                           Icon(
                             Icons.folder,
                             size: 15,
-                            color: Colors.white,
+                            color: Theme.of(context).colorScheme.inverseSurface,
                           ),
                         ]),
                       )),
