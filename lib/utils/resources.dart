@@ -40,6 +40,10 @@ class AppColors {
   static const Color lightPink = const Color(0xFFFFCFCF);
   static const Color pink = const Color(0xFFFF5252);
 
+  static const Color textOnBackgroundLight = Color.fromARGB(255, 77, 77, 77);
+  static const Color textOnBackgroundDark = Color.fromARGB(255, 237, 237, 237);
+
+
   static const List<Color> foregroundColors = [
     AppColors.green,
     AppColors.orange,
