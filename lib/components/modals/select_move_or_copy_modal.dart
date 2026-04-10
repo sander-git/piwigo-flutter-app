@@ -4,7 +4,6 @@ import 'package:piwigo_ng/models/album_model.dart';
 import 'package:piwigo_ng/network/albums.dart';
 import 'package:piwigo_ng/network/api_error.dart';
 import 'package:piwigo_ng/utils/localizations.dart';
-import 'package:piwigo_ng/utils/resources.dart';
 
 class SelectMoveOrCopyModal extends StatefulWidget {
   const SelectMoveOrCopyModal({
@@ -243,15 +242,12 @@ class _ExpansionAlbumTileState extends State<ExpansionAlbumTile> {
                         child: Row(spacing: 4, children: [
                           Text(
                             '${widget.album.nbCategories}',
-                            style: TextStyle(
-                              color: Theme.of(context).colorScheme.inverseSurface,
-                              fontSize: 14,
-                            ),
+                            style: Theme.of(context).textTheme.labelMedium,
                           ),
                           Icon(
                             Icons.folder,
                             size: 15,
-                            color: Theme.of(context).colorScheme.inverseSurface,
+                            color: Theme.of(context).textTheme.labelMedium?.color,
                           ),
                         ]),
                       )),

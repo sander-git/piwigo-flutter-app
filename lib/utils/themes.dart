@@ -129,6 +129,8 @@ final ThemeData lightTheme = ThemeData.light(useMaterial3: true).copyWith(
       color: AppColors.black,
       letterSpacing: 0,
     ),
+    labelMedium:
+        TextStyle(fontSize: 14, color: AppColors.textOnBackgroundLight),
     bodySmall: TextStyle(
       fontSize: 14,
       color: const Color(0x80000000),
@@ -168,7 +170,8 @@ final ThemeData lightTheme = ThemeData.light(useMaterial3: true).copyWith(
       color: AppColors.black,
       fontWeight: FontWeight.normal,
     ),
-  ), dialogTheme: DialogThemeData(backgroundColor: AppColors.backgroundLight),
+  ),
+  dialogTheme: DialogThemeData(backgroundColor: AppColors.backgroundLight),
 );
 
 final ThemeData darkTheme = ThemeData.dark(useMaterial3: true).copyWith(
@@ -298,6 +301,10 @@ final ThemeData darkTheme = ThemeData.dark(useMaterial3: true).copyWith(
       color: AppColors.white,
       letterSpacing: 0,
     ),
+    labelMedium: TextStyle(
+        fontSize: 14,
+        color: AppColors.textOnBackgroundDark
+    ),
     bodySmall: TextStyle(
       fontSize: 14,
       color: const Color(0x80FFFFFF),
@@ -327,5 +334,6 @@ final ThemeData darkTheme = ThemeData.dark(useMaterial3: true).copyWith(
       color: AppColors.white,
       fontWeight: FontWeight.bold,
     ),
-  ), dialogTheme: DialogThemeData(backgroundColor: AppColors.backgroundDark),
+  ),
+  dialogTheme: DialogThemeData(backgroundColor: AppColors.backgroundDark),
 );
