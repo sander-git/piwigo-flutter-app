@@ -2,12 +2,6 @@
 
 An android application for managing and uploading images to Piwigo servers.
 
-This app is **under development** by the Piwigo android team. The goal is to close the gap with the IOS Piwigo application while keeping in mind the priority of the features like the **upload**, and the ability to **select multiple images** at a time or to **take photos directly from the app** to upload them.
-
-All features are not enabled and will be implemented when needed.
-If you face trouble please [create tickets](https://github.com/Piwigo/piwigo-flutter-app/issues/new/choose) in case you detect a bug.
-
-
 # Installation
 
 You can download the latest version either from Github or from Google Play Store:
