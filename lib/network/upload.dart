@@ -5,10 +5,10 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:piwigo_ng/app.dart';
 import 'package:piwigo_ng/components/dialogs/confirm_dialog.dart';
 import 'package:piwigo_ng/network/api_client.dart';
@@ -23,36 +23,148 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../services/chunked_uploader.dart';
 import '../services/notification_service.dart';
+import '../utils/flutter_absolute_path.dart';
 
-/// Handle Android API 33 permissions
+export '../utils/flutter_absolute_path.dart';
+
+/// Handle Android API permissions (including ACCESS_MEDIA_LOCATION for API 29+ and limited access on Android 14+)
 Future<bool> askMediaPermission() async {
-  bool storage = true;
-  bool videos = true;
-  bool photos = true;
+  if (!Platform.isAndroid) return true;
 
-  // Only check for storage < Android 13
   AndroidDeviceInfo androidInfo = await DeviceInfoPlugin().androidInfo;
+  List<Permission> permissionsToRequest = [];
+
   if (androidInfo.version.sdkInt >= 33) {
-    videos = await Permission.videos.status.isGranted;
-    photos = await Permission.photos.status.isGranted;
-
-    if (!videos) {
-      videos = await Permission.videos.request().isGranted;
-    }
-    if (!photos) {
-      photos = await Permission.photos.request().isGranted;
-    }
+    final photosGranted = await Permission.photos.isGranted || await Permission.photos.isLimited;
+    final videosGranted = await Permission.videos.isGranted || await Permission.videos.isLimited;
+    if (!photosGranted) permissionsToRequest.add(Permission.photos);
+    if (!videosGranted) permissionsToRequest.add(Permission.videos);
   } else {
-    storage = await Permission.storage.status.isGranted;
-    if (!storage) {
-      storage = await Permission.storage.request().isGranted;
+    if (!await Permission.storage.isGranted) permissionsToRequest.add(Permission.storage);
+  }
+
+  // Append ACCESS_MEDIA_LOCATION on Android 10+ (API 29+) to the requested permissions list
+  if (androidInfo.version.sdkInt >= 29) {
+    if (!await Permission.accessMediaLocation.isGranted) {
+      permissionsToRequest.add(Permission.accessMediaLocation);
     }
   }
 
-  if (storage && (videos || photos)) {
-    return true;
+  if (permissionsToRequest.isNotEmpty) {
+    await permissionsToRequest.request();
   }
-  return false;
+
+  if (androidInfo.version.sdkInt >= 33) {
+    return await Permission.photos.isGranted ||
+        await Permission.photos.isLimited ||
+        await Permission.videos.isGranted ||
+        await Permission.videos.isLimited;
+  } else {
+    return await Permission.storage.isGranted;
+  }
+}
+
+/// Resolves an [XFile] to a local [File], resolving Android content URIs, stripping metadata if requested,
+/// and applying upload quality compression if configured.
+Future<File> resolveMediaFile(XFile xFile) async {
+  String filePath = xFile.path;
+  if (Platform.isAndroid && filePath.startsWith('content://')) {
+    await askMediaPermission();
+    try {
+      filePath = await FlutterAbsolutePath.getAbsolutePath(
+        filePath,
+        requireOriginal: !Preferences.getRemoveMetadata,
+      );
+    } catch (e) {
+      debugPrint("Error resolving content URI: $e");
+    }
+  }
+  if (Preferences.getRemoveMetadata && Platform.isAndroid) {
+    try {
+      filePath = await FlutterAbsolutePath.stripMetadata(filePath);
+    } catch (e) {
+      debugPrint("Error stripping metadata: $e");
+    }
+  }
+
+  // Cross-platform EXIF removal & quality compression:
+  // When "Remove Metadata" is ON or quality < 100%, run images through FlutterImageCompress.
+  // This cleanly strips EXIF from HEIC, JPEG, PNG, and WEBP on both Android and iOS without mangling filenames.
+  final bool stripExif = Preferences.getRemoveMetadata;
+  final int quality = (Preferences.getUploadQuality * 100).round();
+  final bool needsProcessing = quality < 100 || stripExif;
+
+  if (needsProcessing && !filePath.contains('/compressed/')) {
+    final lower = filePath.toLowerCase();
+    if (lower.endsWith('.jpg') || lower.endsWith('.jpeg') || lower.endsWith('.png') || lower.endsWith('.heic') || lower.endsWith('.webp')) {
+      try {
+        final dir = await getTemporaryDirectory();
+        final subDir = Directory('${dir.path}/compressed/${DateTime.now().millisecondsSinceEpoch}_${filePath.hashCode.abs()}');
+        if (!await subDir.exists()) await subDir.create(recursive: true);
+        final cleanName = filePath.split(RegExp(r'[\\/]')).last;
+        final targetPath = '${subDir.path}/$cleanName';
+        final compressed = await FlutterImageCompress.compressAndGetFile(
+          filePath,
+          targetPath,
+          quality: quality,
+          keepExif: !stripExif,
+        );
+        if (compressed != null) {
+          if (!stripExif && Platform.isAndroid) {
+            try {
+              await FlutterAbsolutePath.copyExif(filePath, compressed.path);
+            } catch (e) {
+              debugPrint("Error restoring EXIF after compression: $e");
+            }
+          }
+          final String intermediatePath = filePath;
+          filePath = compressed.path;
+          safelyDeleteTempFile(File(intermediatePath));
+        }
+      } catch (e) {
+        debugPrint("Error processing image for upload: $e");
+      }
+    }
+  }
+
+  return File(filePath);
+}
+
+/// Resolves a list of [XFile]s to local [File]s.
+Future<List<File>> resolveMediaFiles(List<XFile> photos) async {
+  List<File> files = [];
+  for (var photo in photos) {
+    files.add(await resolveMediaFile(photo));
+  }
+  return files;
+}
+
+/// Safely deletes an isolated temporary file created for upload without touching original user files.
+void safelyDeleteTempFile(File file) {
+  try {
+    final normalized = file.path.replaceAll('\\', '/');
+    if (normalized.contains('/original_media/') ||
+        normalized.contains('/temp_upload/') ||
+        normalized.contains('/compressed/')) {
+      if (file.existsSync()) {
+        file.deleteSync();
+        final parent = file.parent;
+        final parentName = parent.path.split(RegExp(r'[\\/]')).last;
+        if (parentName != 'original_media' &&
+            parentName != 'temp_upload' &&
+            parentName != 'compressed') {
+          final parentNormalized = parent.path.replaceAll('\\', '/');
+          if (parentNormalized.contains('/original_media/') ||
+              parentNormalized.contains('/temp_upload/') ||
+              parentNormalized.contains('/compressed/')) {
+            parent.deleteSync(recursive: true);
+          }
+        }
+      }
+    }
+  } catch (e) {
+    debugPrint("Error deleting temp upload file: $e");
+  }
 }
 
 /// Prepare and upload with [uploadChunk] a list of files.
@@ -90,8 +202,7 @@ Future<List<int>> uploadPhotos(
 
   // Creates Upload Item list for the upload notifier
   for (var photo in photos) {
-    File? uploadFile = File(photo.path);
-
+    File uploadFile = await resolveMediaFile(photo);
     items.add(UploadItem(
       file: uploadFile,
       albumId: albumId,
@@ -133,6 +244,7 @@ Future<List<int>> uploadPhotos(
 
         // Notify provider the upload has completed.
         uploadNotifier.itemUploadCompleted(item);
+        safelyDeleteTempFile(item.file);
         if (Preferences.getDeleteAfterUpload) {
           // todo: delete real file path, not the cached one.
         }
@@ -274,18 +386,4 @@ Future<bool> communityUploadCompleted(List<int> imageId, int categoryId) async {
     debugPrint("$e");
   }
   return false;
-}
-
-class FlutterAbsolutePath {
-  static const MethodChannel _channel = MethodChannel('flutter_absolute_path');
-
-  /// Gets absolute path of the file from android URI or iOS PHAsset identifier
-  /// The return of this method can be used directly with flutter [File] class
-  static Future<String> getAbsolutePath(String uri) async {
-    final Map<String, dynamic> params = <String, dynamic>{
-      'uri': uri,
-    };
-    final String path = await _channel.invokeMethod('getAbsolutePath', params);
-    return path;
-  }
 }

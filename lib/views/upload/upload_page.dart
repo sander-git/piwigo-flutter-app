@@ -102,8 +102,13 @@ class _UploadGalleryViewPage extends State<UploadPage> with SingleTickerProvider
   }
 
   Future<void> checkImageExist() async {
+    List<File> resolved = await resolveMediaFiles(_imageList);
+    if (!mounted) return;
+    for (int i = 0; i < _imageList.length && i < resolved.length; i++) {
+      _imageList[i] = XFile(resolved[i].path);
+    }
     List<File> files = await checkImagesNotExist(
-      _imageList.map((e) => File(e.path)).toList(),
+      resolved,
       returnExistFiles: true,
     );
     if (!mounted) return;
@@ -150,6 +155,7 @@ class _UploadGalleryViewPage extends State<UploadPage> with SingleTickerProvider
 
   Future<void> _onRemoveFile(int index) async {
     String path = _imageList[index].path;
+    safelyDeleteTempFile(File(path));
     setState(() {
       _imageExistList.remove(path);
       _imageList.removeAt(index);

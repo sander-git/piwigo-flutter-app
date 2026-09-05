@@ -81,5 +81,6 @@ flutter {
 
 dependencies {
     implementation("androidx.window:window:1.5.1")
+    implementation("androidx.exifinterface:exifinterface:1.3.7")
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
 }

@@ -12,6 +12,9 @@ import 'package:piwigo_ng/views/authentication/login_settings_page.dart';
 import 'package:rounded_loading_button/rounded_loading_button.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:image_picker/image_picker.dart';
+import 'package:piwigo_ng/services/receive_sharing.dart';
+import 'package:piwigo_ng/views/upload/upload_page.dart';
 import '../../components/fields/app_field.dart';
 import '../album/root_album_page.dart';
 
@@ -128,6 +131,16 @@ class _LoginFormViewState extends State<LoginFormView> {
       RootAlbumPage.routeName,
       arguments: {'isAdmin': appPreferences.getBool('IS_USER_ADMIN')},
     );
+    if (SharedIntent.hasSharedFiles) {
+      final List<XFile> pendingFiles = List<XFile>.from(SharedIntent.sharedFiles!);
+      SharedIntent.cleanupSharedFiles();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        App.navigatorKey.currentState?.pushNamed(
+          UploadPage.routeName,
+          arguments: {'images': pendingFiles},
+        );
+      });
+    }
   }
 
   void _onLogin() async {

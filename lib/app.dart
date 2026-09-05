@@ -29,7 +29,7 @@ import 'package:piwigo_ng/views/upload/upload_status_page.dart';
 import '/l10n/app_localizations.dart';
 import 'models/image_model.dart';
 
-class App extends StatelessWidget {
+class App extends StatefulWidget {
   const App({Key? key}) : super(key: key);
 
   static final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
@@ -39,14 +39,47 @@ class App extends StatelessWidget {
   static final GlobalKey appKey = GlobalKey();
 
   @override
+  State<App> createState() => _AppState();
+}
+
+class _AppState extends State<App> {
+  @override
+  void initState() {
+    super.initState();
+    SharedIntent.listenForSharedMedia((files) {
+      if (files.isNotEmpty) {
+        final serverUrl = appPreferences.getString(Preferences.serverUrlKey);
+        final token = appPreferences.getString(Preferences.tokenKey);
+        final bool isAuthenticated =
+            serverUrl != null && serverUrl.isNotEmpty && token != null && token.isNotEmpty;
+        if (isAuthenticated) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            App.navigatorKey.currentState?.pushNamed(
+              UploadPage.routeName,
+              arguments: {'images': files},
+            );
+            SharedIntent.cleanupSharedFiles();
+          });
+        }
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    SharedIntent.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return AppProviders(
       builder: (localNotifier, themeNotifier) {
         return MaterialApp(
           title: 'Piwigo NG',
-          key: appKey,
-          navigatorKey: navigatorKey,
-          scaffoldMessengerKey: scaffoldMessengerKey,
+          key: App.appKey,
+          navigatorKey: App.navigatorKey,
+          scaffoldMessengerKey: App.scaffoldMessengerKey,
           localizationsDelegates: const [
             AppLocalizations.delegate,
             GlobalMaterialLocalizations.delegate,

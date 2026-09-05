@@ -1,9 +1,11 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:piwigo_ng/network/upload.dart';
 import 'package:piwigo_ng/components/dialogs/confirm_dialog.dart';
 import 'package:piwigo_ng/components/modals/choose_camera_picker_modal.dart';
 import 'package:piwigo_ng/components/modals/choose_move_option_modal.dart';
@@ -59,16 +61,60 @@ Future<File> compressImage(File file,
   return file;
 }
 
+bool isAllowedFileType(String fileName) {
+  final availableTypes = Preferences.getAvailableFileTypes
+      .map((e) => e.trim().toLowerCase().replaceAll('.', ''))
+      .where((e) => e.isNotEmpty)
+      .toSet();
+  if (availableTypes.isEmpty) {
+    return true;
+  }
+  final dotIndex = fileName.lastIndexOf('.');
+  if (dotIndex == -1 || dotIndex == fileName.length - 1) return false;
+  final ext = fileName.substring(dotIndex + 1).toLowerCase();
+  return availableTypes.contains(ext);
+}
+
 Future<List<XFile>?> onPickImages() async {
   try {
+    if (Platform.isAndroid) {
+      if (!await askMediaPermission()) return null;
+      try {
+        const MethodChannel pickerChannel =
+            MethodChannel('com.piwigo.piwigo_ng/media_picker');
+        final bool requireOriginal = !Preferences.getRemoveMetadata;
+        final List<dynamic>? paths =
+            await pickerChannel.invokeMethod<List<dynamic>>('pickMedia', {
+          'requireOriginal': requireOriginal,
+        });
+        if (paths != null && paths.isNotEmpty) {
+          List<XFile> files = [];
+          for (var p in paths) {
+            final file = XFile(p.toString());
+            if (isAllowedFileType(file.name)) {
+              files.add(file);
+            }
+          }
+          return files;
+        } else if (paths != null && paths.isEmpty) {
+          return [];
+        }
+      } catch (e) {
+        debugPrint('Native media picker fallback: $e');
+      }
+    }
+
     List<XFile> pickedFiles = await _picker.pickMultipleMedia(
-      imageQuality: (Preferences.getUploadQuality * 100).round(),
+      imageQuality: Preferences.getRemoveMetadata
+          ? (Preferences.getUploadQuality * 100).round()
+          : (Preferences.getUploadQuality < 1.0
+              ? (Preferences.getUploadQuality * 100).round()
+              : null),
       requestFullMetadata: !Preferences.getRemoveMetadata,
     );
     List<XFile> files = [];
     for (var file in pickedFiles) {
-      if (Preferences.getAvailableFileTypes
-          .contains(file.name.split('.').last)) {
+      if (isAllowedFileType(file.name)) {
         files.add(file);
       }
     }
@@ -91,7 +137,11 @@ Future<XFile?> onTakePhoto(BuildContext context) async {
       case 0:
         image = await _picker.pickImage(
           source: ImageSource.camera,
-          imageQuality: (Preferences.getUploadQuality * 100).round(),
+          imageQuality: Preferences.getRemoveMetadata
+              ? (Preferences.getUploadQuality * 100).round()
+              : (Preferences.getUploadQuality < 1.0
+                  ? (Preferences.getUploadQuality * 100).round()
+                  : null),
           requestFullMetadata: !Preferences.getRemoveMetadata,
         );
         break;
